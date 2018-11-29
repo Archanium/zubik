@@ -1,20 +1,16 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #![allow(dead_code)]
+
 #[macro_use]
 extern crate rocket;
-
 extern crate rocket_contrib;
-#[macro_use]
-extern crate serde_derive;
-
 #[cfg(test)]
 mod tests;
 
 use rocket_contrib::json::Json;
 
-pub fn app() -> rocket::Rocket {
-    return rocket::ignite().mount("/", routes![release]);
-}
+#[macro_use]
+extern crate serde_derive;
 
 #[derive(Deserialize)]
 struct ReleaseEvent {
@@ -31,6 +27,10 @@ struct ReleaseData {
 #[derive(Deserialize)]
 struct AssetData {
     url: String
+}
+
+pub fn app() -> rocket::Rocket {
+    return rocket::ignite().mount("/", routes![release]);
 }
 
 #[post("/webhook", data = "<payload>")]
