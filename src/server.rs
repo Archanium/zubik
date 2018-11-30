@@ -5,5 +5,5 @@ use std::env;
 
 fn main() {
     dotenv::dotenv().ok();
-    zubik::app().launch();
+    zubik::app(zubik::Config::from_env()).launch();
 }
