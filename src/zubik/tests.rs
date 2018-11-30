@@ -1,10 +1,11 @@
 use rocket::local::Client;
 use rocket::http::Status;
 use mockito::mock;
-
+use std::env;
 
 #[test]
 fn get_request() {
+    dotenv::from_filename(".env.test").ok();
     let instance = super::app();
     let client = Client::new(instance).expect("valid rocket instance");
     let response = client.get("/").dispatch();
@@ -59,6 +60,7 @@ fn payload_for_release_2_assets() {
 #[test]
 fn payload_for_release_single_asset() {
     let instance = super::app();
+
     let client = Client::new(instance).expect("valid rocket instance");
     let mut request = client.post("/webhook").body(format!(r#"{{
   "action": "published",
@@ -71,9 +73,33 @@ fn payload_for_release_single_asset() {
   }}
 }}"#, [mockito::SERVER_URL, "/test"].join("")));
     request.add_header(rocket::http::ContentType::JSON);
-    mock("GET","/test").with_body("I am a file").create();
+    let _m = mock("GET", "/test").with_body("I am a file").create();
 
     let mut response = request.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.body_string(), Some("No release script defined".into()));
+}
+
+
+#[test]
+fn payload_for_release_single_asset_with_script() {
+    let instance = super::app();
+    env::set_var("RELEASE_SCRIPT", "head");
+    let client = Client::new(instance).expect("valid rocket instance");
+    let mut request = client.post("/webhook").body(format!(r#"{{
+  "action": "published",
+  "release": {{
+    "id": 11248810,
+    "tag_name": "0.0.1",
+    "assets": [
+        {{"url":"{}"}}
+    ]
+  }}
+}}"#, [mockito::SERVER_URL, "/test"].join("")));
+    request.add_header(rocket::http::ContentType::JSON);
+    let _m = mock("GET", "/test").match_header("Accept", "application/octet-stream").with_body("I am a file").create().expect(1);
+
+    let mut response = request.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.body_string(), Some("I am a file".into()));
 }
