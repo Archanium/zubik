@@ -1,0 +1,8 @@
+#!/usr/bin/env php
+<?php
+
+array_shift($argv);
+
+$filePath = array_shift($argv);
+mkdir("~/tests", true);
+copy($filePath, "~/tests/release_" . time());
