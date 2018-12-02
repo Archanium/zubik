@@ -5,18 +5,17 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
-extern crate reqwest;
-extern crate tempfile;
 #[cfg(test)]
 extern crate mockito;
+extern crate reqwest;
+extern crate tempfile;
 
-
-use rocket_contrib::json::Json;
-use tempfile::NamedTempFile;
-use std::process::Command;
 use reqwest::RequestBuilder;
-use std::env;
 use rocket::State;
+use rocket_contrib::json::Json;
+use std::env;
+use std::process::Command;
+use tempfile::NamedTempFile;
 
 #[derive(Deserialize)]
 struct ReleaseEvent {
@@ -32,15 +31,17 @@ struct ReleaseData {
 
 #[derive(Deserialize)]
 struct AssetData {
-    url: String
+    url: String,
 }
 
 struct App {
-    config: Config
+    config: Config,
 }
 
 pub fn app(config: Config) -> rocket::Rocket {
-    return rocket::ignite().manage(App { config }).mount("/", routes![release]);
+    return rocket::ignite()
+        .manage(App { config })
+        .mount("/", routes![release]);
 }
 
 fn add_oauth_token(request: RequestBuilder, conf: &Config) -> RequestBuilder {
@@ -64,12 +65,16 @@ fn download_release(asset: &AssetData, conf: &Config) -> String {
     let request = request.header("Accept", "application/octet-stream");
     let request = add_oauth_token(request, conf);
 
-
     let mut output_file: NamedTempFile = NamedTempFile::new().expect("Could not create temp file");
     let mut response = request.send().expect("Error sending request to");
-    response.copy_to(&mut output_file).expect("Could not write file");
+    response
+        .copy_to(&mut output_file)
+        .expect("Could not write file");
 
-    let output = Command::new(release_script).arg(output_file.path()).output().expect("Error opening script");
+    let output = Command::new(release_script)
+        .arg(output_file.path())
+        .output()
+        .expect("Error opening script");
     let res;
     if !output.status.success() {
         res = String::from_utf8(output.stderr);
@@ -89,12 +94,11 @@ fn release<'a>(payload: Json<ReleaseEvent>, app_config: State<App>) -> String {
             output = download_release(asset, &app_config.config).to_string();
             output.as_str()
         }
-        _ => "Not handled"
+        _ => "Not handled",
     };
 
     response_parts.to_string()
 }
-
 
 #[cfg(test)]
 mod tests;
